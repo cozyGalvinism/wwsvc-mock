@@ -1,0 +1,30 @@
+[package]
+name = "wwsvc-mock"
+version = "0.1.0"
+edition = "2021"
+authors = ["cozyGalvinism <jean@der-capta.in>"]
+license = "LGPL-3.0"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = "1.0.80"
+axum = { version = "0.7.4", features = ["macros"] }
+figment = { version = "0.10.14", features = ["env", "toml", "test"] }
+rand = "0.8.5"
+serde = { version = "1.0.197", features = ["derive"] }
+serde-inline-default = "0.2.0"
+tokio = { version = "1.36.0", features = ["full"] }
+md5 = "0.7.0"
+encoding_rs = "0.8.33"
+strum = { version = "0.26.2", features = ["derive"] }
+serde_json = "1.0.114"
+http-body-util = "0.1.1"
+
+[dev-dependencies]
+axum-test = "14.3.1"
+pretty_assertions = "1.4.0"
+serde_json = "1.0.114"
+wwsvc-rs = { version = "3", features = ["derive", "rustls"] }
+httpdate = "1.0.3"
+reqwest = { version = "0.12.0", default-features = false, features = ["rustls-tls", "json"] }
