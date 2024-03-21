@@ -1,11 +1,12 @@
 [package]
 name = "wwsvc-mock"
-version = "1.0.0"
+version = "1.0.1"
 edition = "2021"
 authors = ["cozyGalvinism <jean@der-capta.in>"]
 license = "LGPL-3.0"
 description = "A mock server for testing SoftENGINE's ERP Suite without setting up an instance!"
 repository = "https://github.com/cozyGalvinism/wwsvc-mock"
+exclude = ["/data"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
