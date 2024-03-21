@@ -1,3 +1,8 @@
+#![forbid(missing_docs)]
+#![forbid(unsafe_code)]
+#![warn(missing_debug_implementations)]
+#![doc = include_str!("../README.md")]
+
 use std::sync::Arc;
 
 use axum::{
@@ -14,14 +19,14 @@ use http_body_util::BodyExt;
 mod app_config;
 mod routes;
 
-pub use app_config::{AppConfig, FileOrString, MockResource, MockResourceMethod};
+pub use app_config::{AppConfig, FileOrString, MockResource, MockResourceMethod, ServerConfig, WebwareConfig, WebservicesConfig, CredentialsConfig};
 use routes::{
     exec_json::exec_json,
     service_pass::{handle_deregister, handle_register},
 };
 
 #[derive(axum::extract::FromRef, Clone)]
-pub struct AppState {
+struct AppState {
     pub config: Arc<AppConfig>,
 }
 
@@ -60,17 +65,26 @@ where
     };
 
     if let Ok(body) = std::str::from_utf8(&bytes) {
-        println!("{} {}", direction, body);
+        tracing::debug!("{} {}", direction, body);
     }
 
     Ok(bytes)
 }
 
-#[derive(serde::Serialize)]
+/// A wrapper for `serde_json::Value` that serializes as an empty object if `None`.
+#[derive(serde::Serialize, Debug)]
 pub struct OptionalJson(
     #[serde(skip_serializing_if = "Option::is_none")] Option<serde_json::Value>,
 );
 
+/// Generates the router for the mock server using the provided configuration.
+/// 
+/// It currently supports the following routes:
+/// 
+/// - `PUT/POST/DELETE /WWSVC/EXECJSON/`
+/// - `PUT/POST/DELETE /WWSVC/EXECJSON`
+/// - `GET /WWSVC/WWSERVICE/REGISTER/:vendor_hash/:app_hash/:secret/:revision/`
+/// - `GET /WWSVC/WWSERVICE/DEREGISTER/:service_pass/`
 pub async fn app(config: &AppConfig) -> anyhow::Result<Router> {
     let registering_routes = Router::new()
         .route(

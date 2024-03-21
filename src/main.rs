@@ -4,6 +4,7 @@ use wwsvc_mock::{app, AppConfig};
 #[cfg(not(tarpaulin_include))]
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    tracing_subscriber::fmt::init();
     let config = AppConfig::new()?;
 
     let Some(server_config) = &config.server else {
@@ -12,29 +13,29 @@ async fn main() -> anyhow::Result<()> {
         );
     };
 
-    println!("----- WEBWARE Mock Server -----");
-    println!(
+    tracing::info!("----- WEBWARE Mock Server -----");
+    tracing::info!(
         "Server listening on: http://{}/",
         server_config.bind_address
     );
-    println!("Mocked Resources: {}", config.mock_resources.len());
-    println!("Vendor Hash: {}", config.webware.webservices.vendor_hash);
-    println!(
+    tracing::info!("Mocked Resources: {}", config.mock_resources.len());
+    tracing::info!("Vendor Hash: {}", config.webware.webservices.vendor_hash);
+    tracing::info!(
         "Application Hash: {}",
         config.webware.webservices.application_hash
     );
-    println!("Revision: {}", config.webware.webservices.version);
-    println!(
+    tracing::info!("Revision: {}", config.webware.webservices.version);
+    tracing::info!(
         "Application Secret: {}",
         config.webware.webservices.application_secret
     );
-    println!("--------- Credentials ---------");
-    println!("Service Pass: {}", config.webware.credentials.service_pass);
-    println!(
+    tracing::info!("--------- Credentials ---------");
+    tracing::info!("Service Pass: {}", config.webware.credentials.service_pass);
+    tracing::info!(
         "Application ID: {}",
         config.webware.credentials.application_id
     );
-    println!("-------------------------------");
+    tracing::info!("-------------------------------");
 
     let app = app(&config).await?;
     let tcp_listener = TcpListener::bind(&server_config.bind_address).await?;

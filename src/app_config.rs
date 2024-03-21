@@ -19,18 +19,27 @@ fn generate_hash() -> String {
     hash
 }
 
+/// The main configuration of the mock server. See each field for more information.
 #[derive(Deserialize, Default, Debug, Clone)]
 pub struct AppConfig {
+    /// The server configuration, see [ServerConfig] for more information.
     pub server: Option<ServerConfig>,
+    /// The webware mocking configuration, see [WebwareConfig] for more information.
     #[serde(default = "WebwareConfig::default")]
     pub webware: WebwareConfig,
+    /// A list of mock resources to be used by the server. For more information see [MockResource].
     #[serde(default)]
     pub mock_resources: Vec<MockResource>,
+    /// Whether to enable the debug middleware for logging requests and responses.
     #[serde(default)]
     pub debug: bool,
 }
 
 impl AppConfig {
+    /// Loads the configuration from both the `config.toml` file and the environment variables.
+    /// 
+    /// The environment variables are prefixed with `APP__` and split by `__`. For example, the
+    /// `server.bind_address` field can be set by the `APP__SERVER__BIND_ADDRESS` environment.
     pub fn new() -> Result<Self, figment::Error> {
         Figment::new()
             .merge(Toml::file("config.toml"))
@@ -38,28 +47,40 @@ impl AppConfig {
             .extract()
     }
 
+    /// Adds a [mock resource][MockResource] to the configuration.
     pub fn with_mock_resource(mut self, resource: MockResource) -> Self {
         self.mock_resources.push(resource);
         self
     }
 }
 
+/// The server configuration. This config only applies for the binary, not the library.
 #[derive(Deserialize, Debug, Clone)]
 pub struct ServerConfig {
+    /// The address to bind the server to. For example, `127.0.0.1:3000`.
     pub bind_address: String,
 }
 
+/// The mocking configuration for the WEBWARE, which includes the webservices and the associated credentials.
 #[derive(Deserialize, Default, Debug, Clone)]
 pub struct WebwareConfig {
+    /// The configuration for the webservices, see [WebservicesConfig] for more information.
     pub webservices: WebservicesConfig,
-
+    /// The credentials that the webservices will accept. See [CredentialsConfig] for more information.
     pub credentials: CredentialsConfig,
 }
 
+/// The credentials configuration for the webservices.
 #[derive(Deserialize, Debug, Clone)]
 pub struct CredentialsConfig {
+    /// The service pass that the webservices will accept.
+    /// 
+    /// If not provided, a random 32 character hash will be generated.
     #[serde(default = "generate_hash")]
     pub service_pass: String,
+    /// The application ID that the webservices will accept.
+    /// 
+    /// If not provided, a random 32 character hash will be generated.
     #[serde(default = "generate_hash")]
     pub application_id: String,
 }
@@ -73,15 +94,28 @@ impl Default for CredentialsConfig {
     }
 }
 
+/// The configuration for the webservices. You can either provide your own hashes or let the server generate them.
 #[serde_inline_default]
 #[derive(Deserialize, Debug, Clone)]
 pub struct WebservicesConfig {
+    /// The vendor hash that the webservices will accept.
+    /// 
+    /// If not provided, a random 32 character hash will be generated.
     #[serde(default = "generate_hash")]
     pub vendor_hash: String,
+    /// The application hash that the webservices will accept.
+    /// 
+    /// If not provided, a random 32 character hash will be generated.
     #[serde(default = "generate_hash")]
     pub application_hash: String,
+    /// The version of the webservices application that the server will accept.
+    /// 
+    /// If not provided, the version will be set to `1`.
     #[serde_inline_default(1)]
     pub version: u32,
+    /// The application secret that the webservices will accept.
+    /// 
+    /// If not provided, the secret will be set to `1`.
     #[serde_inline_default("1".to_string())]
     pub application_secret: String,
 }
@@ -97,15 +131,30 @@ impl Default for WebservicesConfig {
     }
 }
 
+/// A data source that can be either a file path, a string or empty.
 #[derive(Deserialize, Debug, Clone)]
 #[serde(tag = "type")]
 pub enum FileOrString {
-    File { file: String },
-    String { value: String },
+    /// A file path to read the data from.
+    File {
+        /// The path to the file.
+        file: String
+    },
+    /// A string to use as the data.
+    String {
+        /// The string value.
+        value: String
+    },
+    /// An empty data source.
     Empty,
 }
 
 impl FileOrString {
+    /// Returns the data source as a string.
+    /// 
+    /// If the data source is a file, it will read the file and return the contents.
+    /// If the data source is a string, it will return the string.
+    /// If the data source is empty, it will return an empty string.
     pub fn as_string(&self) -> String {
         match self {
             FileOrString::File { file } => std::fs::read_to_string(file).unwrap(),
@@ -114,6 +163,11 @@ impl FileOrString {
         }
     }
 
+    /// Returns the data source as an [OptionalJson] value.
+    /// 
+    /// If the data source is a file, it will read the file and parse it as JSON.
+    /// If the data source is a string, it will parse the string as JSON.
+    /// If the data source is empty, it will return `None`.
     pub fn as_json_value(&self) -> OptionalJson {
         match self {
             FileOrString::File { file: _ } => OptionalJson(Some(serde_json::from_str(&self.as_string()).unwrap())),
@@ -123,16 +177,34 @@ impl FileOrString {
     }
 }
 
+/// The method of the mock resource.
+/// 
+/// These are the methods that the WEBSERVICES accept for functions.
 #[derive(Deserialize, Debug, Clone, PartialEq)]
 pub enum MockResourceMethod {
+    /// The GET method, used for reading data.
+    /// 
+    /// Serializes and deserializes to and from `GET`.
     #[serde(rename = "GET")]
     Get,
+    /// The INSERT method, used for inserting data.
+    /// 
+    /// Serializes and deserializes to and from `INSERT`.
     #[serde(rename = "INSERT")]
     Insert,
+    /// The PUT method, used for updating data.
+    /// 
+    /// Serializes and deserializes to and from `PUT`.
     #[serde(rename = "PUT")]
     Put,
+    /// The DELETE method, used for deleting data.
+    /// 
+    /// Serializes and deserializes to and from `DELETE`.
     #[serde(rename = "DELETE")]
     Delete,
+    /// The EXEC method, used for executing functions.
+    /// 
+    /// Serializes and deserializes to and from `EXEC`.
     #[serde(rename = "EXEC")]
     Exec,
 }
@@ -164,13 +236,24 @@ impl Display for MockResourceMethod {
     }
 }
 
+/// A mock resource that the server will use to mock the WEBSERVICES.
+/// 
+/// The resource will only return the data from the data source if the function, method, revision and parameters match.
+/// There is currently no way to do wildcard matching.
 #[derive(Deserialize, Debug, Clone)]
 pub struct MockResource {
+    /// The [data source][FileOrString] for the mock resource.
     pub data_source: FileOrString,
+    /// The function name for the mock resource.
+    /// 
+    /// This is the name of the function but without the method. For example, `ARTIKEL`.
     pub function: String,
+    /// The method for the mock resource. See [MockResourceMethod] for more information.
     pub method: MockResourceMethod,
+    /// The revision for the mock resource.
     pub revision: u32,
 
+    /// The parameters for the mock resource.
     pub parameters: Option<HashMap<String, String>>,
 }
 
@@ -205,7 +288,6 @@ mod tests {
     #[test]
     fn test_config_parsing() {
         let config = super::AppConfig::new().unwrap();
-        println!("{:?}", config);
         assert_eq!(config.mock_resources.is_empty(), true);
         assert_eq!(config.debug, false);
         assert_eq!(config.webware.credentials.service_pass.len(), 32);
