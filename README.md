@@ -1,6 +1,13 @@
 # wwsvc-mock
 
-[![codecov](https://codecov.io/gh/cozyGalvinism/wwsvc-mock/graph/badge.svg?token=1K75LAQCDT)](https://codecov.io/gh/cozyGalvinism/wwsvc-mock)
+[![crate-badge]][crate-link] [![docs-badge]][docs-link] [![codecov-badge]][codecov-link]
+
+[codecov-badge]: https://codecov.io/gh/cozyGalvinism/wwsvc-mock/graph/badge.svg?token=1K75LAQCDT
+[codecov-link]: https://codecov.io/gh/cozyGalvinism/wwsvc-mock
+[crate-link]: https://crates.io/crates/wwsvc-mock
+[crate-badge]: https://img.shields.io/crates/v/wwsvc-mock.svg
+[docs-badge]: https://img.shields.io/docsrs/wwsvc-mock
+[docs-link]: https://docs.rs/wwsvc-mock
 
 This crate aims to provide a mock server for the SoftENGINE ERP Suite webservices.
 
