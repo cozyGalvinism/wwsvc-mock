@@ -76,8 +76,10 @@ pub struct ServerConfig {
 #[derive(Deserialize, Default, Debug, Clone)]
 pub struct WebwareConfig {
     /// The configuration for the webservices, see [WebservicesConfig] for more information.
+    #[serde(default)]
     pub webservices: WebservicesConfig,
     /// The credentials that the webservices will accept. See [CredentialsConfig] for more information.
+    #[serde(default)]
     pub credentials: CredentialsConfig,
 }
 
