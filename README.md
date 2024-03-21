@@ -48,10 +48,10 @@ APP__MOCK_RESOURCES=[{data_source={type=Empty},function=ARTIKEL,method=INSERT,re
 The same configuration can be expressed in a configuration file:
 
 ```toml
-[app.server]
+[server]
 bind_address = "0.0.0.0:3000"
 
-[[app.mock.resources]]
+[[mock_resources]]
 data_source.type = "Empty"
 function = "ARTIKEL"
 method = "INSERT"

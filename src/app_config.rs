@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fmt::Display, str::FromStr};
+use std::{collections::HashMap, fmt::Display, path::Path, str::FromStr};
 
 use figment::{
     providers::{Env, Format, Toml},
@@ -43,6 +43,17 @@ impl AppConfig {
     pub fn new() -> Result<Self, figment::Error> {
         Figment::new()
             .merge(Toml::file("config.toml"))
+            .merge(Env::prefixed("APP__").split("__"))
+            .extract()
+    }
+
+    /// Loads the configuration from the specified file and the environment variables.
+    ///
+    /// The environment variables are prefixed with `APP__` and split by `__`. For example, the
+    /// `server.bind_address` field can be set by the `APP__SERVER__BIND_ADDRESS` environment.
+    pub fn from_file(file: &Path) -> Result<Self, figment::Error> {
+        Figment::new()
+            .merge(Toml::file(file))
             .merge(Env::prefixed("APP__").split("__"))
             .extract()
     }
@@ -286,7 +297,7 @@ mod tests {
     }
 
     #[test]
-    fn test_config_parsing() {
+    fn default_config() {
         let config = super::AppConfig::new().unwrap();
         assert_eq!(config.mock_resources.is_empty(), true);
         assert_eq!(config.debug, false);
@@ -296,6 +307,31 @@ mod tests {
         assert_eq!(config.webware.webservices.application_hash.len(), 32);
         assert_eq!(config.webware.webservices.version, 1);
         assert_eq!(config.webware.webservices.application_secret, "1".to_string());
+    }
+
+    #[test]
+    fn config_from_file() {
+        figment::Jail::expect_with(|jail| {
+            jail.create_file("test-config.toml", r#"[server]
+            bind_address = "0.0.0.0:3000"
+            
+            [[mock_resources]]
+            data_source.type = "Empty"
+            function = "ARTIKEL"
+            method = "INSERT"
+            revision = 1
+            parameters.ARTNR = "MeinArtikel""#)?;
+
+            let config = super::AppConfig::from_file(std::path::Path::new("test-config.toml")).unwrap();
+            assert_eq!(config.server.unwrap().bind_address, "0.0.0.0:3000");
+            assert_eq!(config.mock_resources.len(), 1);
+            assert_eq!(config.mock_resources[0].function, "ARTIKEL");
+            assert_eq!(config.mock_resources[0].method, super::MockResourceMethod::Insert);
+            assert_eq!(config.mock_resources[0].revision, 1);
+            assert_eq!(config.mock_resources[0].parameters.as_ref().unwrap().get("ARTNR").unwrap(), "MeinArtikel");
+
+            Ok(())
+        });
     }
 
     one_line_assert_eq!(method_get_to_string, super::MockResourceMethod::Get.to_string(), "GET");
