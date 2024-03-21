@@ -70,6 +70,27 @@ The mock server as a whole doesn't mock any data sources. Instead, you will need
 
 Currently it is not possible to jitter response times or return random errors. This is a planned feature.
 
+## Running the server
+
+You can run the server using the built binary:
+
+```sh
+cargo build --release
+target/release/wwsvc-mock
+```
+
+or from this repository:
+
+```sh
+cargo run --release
+```
+
+or using Docker:
+
+```sh
+docker run --rm -p 3000:3000 -e APP__SERVER__BIND_ADDRESS=0.0.0.0:3000 -e RUST_LOG=info ghcr.io/cozygalvinism/wwsvc-mock
+```
+
 ## Limitations
 
 At this time, some limitations apply:
