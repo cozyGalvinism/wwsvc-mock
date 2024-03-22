@@ -7,7 +7,7 @@ use figment::{
 use serde::Deserialize;
 use serde_inline_default::serde_inline_default;
 
-use crate::OptionalJson;
+use crate::{DeserializedRegex, OptionalJson};
 
 fn generate_hash() -> String {
     use rand::Rng;
@@ -267,7 +267,7 @@ pub struct MockResource {
     pub revision: u32,
 
     /// The parameters for the mock resource.
-    pub parameters: Option<HashMap<String, String>>,
+    pub parameters: Option<HashMap<String, DeserializedRegex>>,
 }
 
 impl Display for MockResource {
@@ -288,6 +288,8 @@ mod tests {
     use std::str::FromStr;
 
     use pretty_assertions::assert_eq;
+
+    use crate::DeserializedRegex;
 
     macro_rules! one_line_assert_eq {
         ($fn:ident, $left:expr, $right:expr) => {
@@ -330,7 +332,7 @@ mod tests {
             assert_eq!(config.mock_resources[0].function, "ARTIKEL");
             assert_eq!(config.mock_resources[0].method, super::MockResourceMethod::Insert);
             assert_eq!(config.mock_resources[0].revision, 1);
-            assert_eq!(config.mock_resources[0].parameters.as_ref().unwrap().get("ARTNR").unwrap(), "MeinArtikel");
+            assert_eq!(config.mock_resources[0].parameters.as_ref().unwrap().get("ARTNR").unwrap().is_match("MeinArtikel"), true);
 
             Ok(())
         });
@@ -358,7 +360,7 @@ mod tests {
         method: super::MockResourceMethod::Get,
         revision: 3,
         parameters: Some(wwsvc_rs::collection! {
-            "FELDER".to_string() => "ART_1_25".to_string(),
+            "FELDER".to_string() => DeserializedRegex(regex::Regex::new("ART_1_25").unwrap()),
         })
     }.to_string(), "MockResource { function: ARTIKEL, method: GET, revision: 3, parameters: {\"FELDER\":\"ART_1_25\"} }");
     one_line_assert_eq!(unknown_method_from_str, super::MockResourceMethod::from_str("UNKNOWN").unwrap_err(), "Unknown method: UNKNOWN");

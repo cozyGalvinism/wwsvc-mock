@@ -180,7 +180,7 @@ impl WebserviceRequest {
                     && match resource.parameters {
                         Some(ref parameters) => parameters.iter().all(|(k, v)| {
                             self.function.parameter.iter().any(|request_parameter| {
-                                request_parameter.name == *k && request_parameter.value == *v
+                                request_parameter.name == *k && v.is_match(&request_parameter.value)
                             })
                         }),
                         None => self.function.parameter.is_empty(),

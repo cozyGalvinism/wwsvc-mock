@@ -1,5 +1,5 @@
 use axum_test::{TestServer, TestServerConfig};
-use wwsvc_mock::{app, AppConfig, FileOrString, MockResource, MockResourceMethod};
+use wwsvc_mock::{app, AppConfig, DeserializedRegex, FileOrString, MockResource, MockResourceMethod};
 use wwsvc_rs::{collection, WebwareClient};
 
 pub struct TestEnvironment {
@@ -25,7 +25,7 @@ pub async fn setup(debug: bool) -> anyhow::Result<TestEnvironment> {
         method: MockResourceMethod::Get,
         revision: 3,
         parameters: Some(collection! {
-            "FELDER".to_string() => "ART_1_25".to_string(),
+            "FELDER".to_string() => DeserializedRegex::new("ART_1_25").unwrap(),
         })
     }).with_mock_resource(MockResource {
         data_source: FileOrString::Empty,
@@ -33,8 +33,8 @@ pub async fn setup(debug: bool) -> anyhow::Result<TestEnvironment> {
         method: MockResourceMethod::Put,
         revision: 1,
         parameters: Some(collection! {
-            "ARTNR".to_string() => "Artikel19Prozent".to_string(),
-            "ART_51_60".to_string() => "Eine Bezeichnung".to_string(),
+            "ARTNR".to_string() => DeserializedRegex::new("Artikel19Prozent").unwrap(),
+            "ART_51_60".to_string() => DeserializedRegex::new("Eine Bezeichnung").unwrap(),
         })
     }).with_mock_resource(MockResource {
         data_source: FileOrString::String { value: r#"{"ARTNR": "MeinArtikel"}"#.to_string() },
@@ -42,7 +42,7 @@ pub async fn setup(debug: bool) -> anyhow::Result<TestEnvironment> {
         method: MockResourceMethod::Insert,
         revision: 2,
         parameters: Some(collection! {
-            "ARTNR".to_string() => "MeinArtikel".to_string(),
+            "ARTNR".to_string() => DeserializedRegex::new("MeinArtikel").unwrap(),
         })
     }).with_mock_resource(MockResource {
         data_source: FileOrString::Empty,
@@ -50,7 +50,7 @@ pub async fn setup(debug: bool) -> anyhow::Result<TestEnvironment> {
         method: MockResourceMethod::Delete,
         revision: 1,
         parameters: Some(collection! {
-            "ARTNR".to_string() => "Artikel19Prozent".to_string(),
+            "ARTNR".to_string() => DeserializedRegex::new("Artikel19Prozent").unwrap(),
         })
     }).with_mock_resource(MockResource {
         data_source: FileOrString::String { value: r#"{"GET_RESULT": "Hallo"}"#.to_string() },
@@ -58,8 +58,8 @@ pub async fn setup(debug: bool) -> anyhow::Result<TestEnvironment> {
         method: MockResourceMethod::Exec,
         revision: 1,
         parameters: Some(collection! {
-            "NR".to_string() => "65".to_string(),
-            "P1".to_string() => "Hallo".to_string(),
+            "NR".to_string() => DeserializedRegex::new("65").unwrap(),
+            "P1".to_string() => DeserializedRegex::new("Hallo").unwrap(),
         })
     });
 

@@ -2230,6 +2230,7 @@ dependencies = [
  "md5",
  "pretty_assertions",
  "rand",
+ "regex",
  "reqwest",
  "serde",
  "serde-inline-default",
