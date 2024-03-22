@@ -3,7 +3,7 @@
 #![warn(missing_debug_implementations)]
 #![doc = include_str!("../README.md")]
 
-use std::sync::Arc;
+use std::{ops::Deref, sync::Arc};
 
 use axum::{
     body::{Body, Bytes},
@@ -115,4 +115,66 @@ pub async fn app(config: &AppConfig) -> anyhow::Result<Router> {
     }
 
     Ok(router)
+}
+
+/// A wrapper for `regex::Regex` that deserializes from a string.
+#[derive(Debug, Clone)]
+pub struct DeserializedRegex(regex::Regex);
+
+impl DeserializedRegex {
+    /// Creates a new `DeserializedRegex` from a [String]
+    pub fn new(s: &str) -> Result<Self, regex::Error> {
+        regex::Regex::new(s).map(DeserializedRegex)
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for DeserializedRegex {
+    fn deserialize<D>(deserializer: D) -> Result<DeserializedRegex, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        regex::Regex::new(&s)
+            .map(DeserializedRegex)
+            .map_err(serde::de::Error::custom)
+    }
+}
+
+impl serde::Serialize for DeserializedRegex {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer {
+        self.0.as_str().serialize(serializer)
+    }
+}
+
+impl Deref for DeserializedRegex {
+    type Target = regex::Regex;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl AsRef<regex::Regex> for DeserializedRegex {
+    fn as_ref(&self) -> &regex::Regex {
+        &self.0
+    }
+}
+
+#[cfg(test)]
+// why is this necessary?
+#[cfg(not(tarpaulin_include))]
+mod tests {
+    #[test]
+    fn deserialize_regex() {
+        let deserialized = serde_json::from_str::<super::DeserializedRegex>(r#""^abc$""#).unwrap();
+        assert_eq!(deserialized.as_str(), "^abc$");
+    }
+
+    #[test]
+    fn serialize_regex() {
+        let serialized = serde_json::to_string(&super::DeserializedRegex::new("^abc$").unwrap()).unwrap();
+        assert_eq!(serialized, r#""^abc$""#);
+    }
 }
