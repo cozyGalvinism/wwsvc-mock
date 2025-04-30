@@ -6,8 +6,8 @@ use wwsvc_mock::{AppConfig, app};
 #[clap(author, version, about)]
 struct CliArgs {
     /// Path to the configuration file
-    #[arg(short, long, default_value_t = String::from("config.toml"))]
-    config: String,
+    #[arg(short, long)]
+    config: Option<String>,
 }
 
 #[cfg(not(tarpaulin_include))]
@@ -49,7 +49,18 @@ async fn main() -> anyhow::Result<()> {
 
     tracing_subscriber::fmt::init();
     let args = CliArgs::parse();
-    let config = AppConfig::from_file(&PathBuf::from(args.config))?;
+
+    let config = if let Some(config_path) = args.config {
+        let config_path = PathBuf::from(config_path);
+        if !config_path.exists() {
+            tracing::error!("Config file at {} does not exist!", config_path.display());
+            return Err(anyhow::anyhow!("Config file not found"));
+        }
+
+        AppConfig::from_file(&config_path)?
+    } else {
+        AppConfig::new()?
+    };
 
     tracing::info!("----- WEBWARE Mock Server -----");
     tracing::info!(

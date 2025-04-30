@@ -54,8 +54,8 @@ impl AppConfig {
     /// `server.bind_address` field can be set by the `WWMOCK__SERVER__BIND_ADDRESS` environment.
     pub fn from_file(file: &Path) -> Result<Self, figment::Error> {
         Figment::new()
-            .merge(Toml::file(file))
-            .merge(Env::prefixed("WWMOCK__").split("__"))
+            .admerge(Toml::file(file))
+            .admerge(Env::prefixed("WWMOCK__").split("__"))
             .extract()
     }
 
@@ -330,6 +330,72 @@ mod tests {
             config.webware.webservices.application_secret,
             "1".to_string()
         );
+    }
+
+    #[test]
+    fn complicated_config() {
+        figment::Jail::expect_with(|jail| {
+            jail.create_file(
+                "complicated-config.toml",
+                r#"[webware]
+            [webware.webservices]
+            vendor_hash = "dev"
+            application_hash = "dev"
+            version = 1
+            application_secret = "1"
+
+            [webware.credentials]
+            service_pass = "dev"
+            application_id = "dev"
+
+            [[mock_resources]]
+            function = "IDBID0026"
+            method = "GET"
+            revision = 1
+
+            [mock_resources.parameters]
+            FELDER = "((IDB_\\d+_\\d+),?){10,}"
+            VON_PK = "0NA10000001."
+            BIS_PK = "0NA10000001.99999999"
+
+            [mock_resources.data_source]
+            type = "File"
+            file = "/wwsvc-mock/data/tracking.json"
+
+            [[mock_resources]]
+            function = "BELEG"
+            method = "GET"
+            revision = 1
+
+            [mock_resources.parameters]
+            FELDER = "BEL_19_10,BEL_4449_60,BEL_3913_30"
+
+            [mock_resources.data_source]
+            type = "File"
+            file = "/wwsvc-mock/data/order-data.json"
+
+            [[mock_resources]]
+            function = "GET_RELATION"
+            method = "EXEC"
+            revision = 1
+
+            [mock_resources.parameters]
+            NR = "1752"
+            P1 = "A"
+            P2 = "10000001"
+
+            [mock_resources.data_source]
+            type = "File"
+            file = "/wwsvc-mock/data/order-index-1.json""#,
+            )?;
+            let config =
+                super::AppConfig::from_file(std::path::Path::new("complicated-config.toml"))
+                    .unwrap();
+            assert_eq!(config.mock_resources.len(), 3);
+            assert_eq!(config.webware.credentials.service_pass, "dev");
+
+            Ok(())
+        });
     }
 
     #[test]
