@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 use axum::{
-    async_trait,
     extract::{FromRequestParts, Path, State},
     http::{request::Parts, HeaderMap, StatusCode},
 };
@@ -155,7 +154,6 @@ pub async fn handle_deregister(
 
 pub struct RegisterPath<T>(T);
 
-#[async_trait]
 impl<S, T> FromRequestParts<S> for RegisterPath<T>
 where
     T: DeserializeOwned + Send,

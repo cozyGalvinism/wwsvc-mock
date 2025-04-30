@@ -1,5 +1,14 @@
+use clap::Parser;
 use tokio::net::TcpListener;
-use wwsvc_mock::{app, AppConfig};
+use wwsvc_mock::{AppConfig, app};
+
+#[derive(Parser, Debug)]
+#[clap(author, version, about)]
+struct CliArgs {
+    /// Path to the configuration file
+    #[arg(short, long, default_value_t = String::from("config.toml"))]
+    config: String,
+}
 
 #[cfg(not(tarpaulin_include))]
 async fn shutdown_signal() {
@@ -36,19 +45,16 @@ async fn shutdown_signal() {
 #[cfg(not(tarpaulin_include))]
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    tracing_subscriber::fmt::init();
-    let config = AppConfig::new()?;
+    use std::path::PathBuf;
 
-    let Some(server_config) = &config.server else {
-        anyhow::bail!(
-            "No server configuration found in config.toml or environment variables. Exiting."
-        );
-    };
+    tracing_subscriber::fmt::init();
+    let args = CliArgs::parse();
+    let config = AppConfig::from_file(&PathBuf::from(args.config))?;
 
     tracing::info!("----- WEBWARE Mock Server -----");
     tracing::info!(
         "Server listening on: http://{}/",
-        server_config.bind_address
+        config.server.bind_address
     );
     tracing::info!("Mocked Resources: {}", config.mock_resources.len());
     tracing::info!("Vendor Hash: {}", config.webware.webservices.vendor_hash);
@@ -70,7 +76,7 @@ async fn main() -> anyhow::Result<()> {
     tracing::info!("-------------------------------");
 
     let app = app(&config).await?;
-    let tcp_listener = TcpListener::bind(&server_config.bind_address).await?;
+    let tcp_listener = TcpListener::bind(&config.server.bind_address).await?;
     axum::serve(tcp_listener, app.into_make_service())
         .with_graceful_shutdown(shutdown_signal())
         .await?;

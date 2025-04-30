@@ -1,6 +1,6 @@
 use pretty_assertions::assert_eq;
 use serde_json::json;
-use wwsvc_rs::{collection, futures::FutureExt, Method};
+use wwsvc_rs::{Method, collection, futures::FutureExt};
 
 mod common;
 
@@ -53,9 +53,15 @@ async fn artikel_get_art_nr() {
         .with_registered(|client| {
             async {
                 client
-                    .request_as_response(Method::PUT, "ARTIKEL.GET", 3, collection! {
-                        "FELDER" => "ART_1_25"
-                    }, None)
+                    .request_as_response(
+                        Method::PUT,
+                        "ARTIKEL.GET",
+                        3,
+                        collection! {
+                            "FELDER" => "ART_1_25"
+                        },
+                        None,
+                    )
                     .await
             }
             .boxed()
@@ -97,10 +103,16 @@ async fn artikel_put() {
         .with_registered(|client| {
             async {
                 client
-                    .request_as_response(Method::PUT, "ARTIKEL.PUT", 1, collection! {
-                        "ARTNR" => "Artikel19Prozent",
-                        "ART_51_60" => "Eine Bezeichnung"
-                    }, None)
+                    .request_as_response(
+                        Method::PUT,
+                        "ARTIKEL.PUT",
+                        1,
+                        collection! {
+                            "ARTNR" => "Artikel19Prozent",
+                            "ART_51_60" => "Eine Bezeichnung"
+                        },
+                        None,
+                    )
                     .await
             }
             .boxed()
@@ -142,9 +154,15 @@ async fn artikel_insert() {
         .with_registered(|client| {
             async {
                 client
-                    .request_as_response(Method::PUT, "ARTIKEL.INSERT", 2, collection! {
-                        "ARTNR" => "MeinArtikel",
-                    }, None)
+                    .request_as_response(
+                        Method::PUT,
+                        "ARTIKEL.INSERT",
+                        2,
+                        collection! {
+                            "ARTNR" => "MeinArtikel",
+                        },
+                        None,
+                    )
                     .await
             }
             .boxed()
@@ -185,9 +203,15 @@ async fn artikel_delete() {
         .with_registered(|client| {
             async {
                 client
-                    .request_as_response(Method::PUT, "ARTIKEL.DELETE", 1, collection! {
-                        "ARTNR" => "Artikel19Prozent"
-                    }, None)
+                    .request_as_response(
+                        Method::PUT,
+                        "ARTIKEL.DELETE",
+                        1,
+                        collection! {
+                            "ARTNR" => "Artikel19Prozent"
+                        },
+                        None,
+                    )
                     .await
             }
             .boxed()
@@ -222,17 +246,24 @@ async fn get_relation_exec() {
             "ERRNO": "0",
             "ERRNOTXT": "SVCERR_NO_ERROR (0)"
         },
-        "GET_RESULT": "Hallo"
+        "GET_RESULT": "HalloWelt"
     });
     let response = env
         .client
         .with_registered(|client| {
             async {
                 client
-                    .request_as_response(Method::PUT, "GET_RELATION.EXEC", 1, collection! {
-                        "NR" => "65",
-                        "P1" => "Hallo"
-                    }, None)
+                    .request_as_response(
+                        Method::PUT,
+                        "GET_RELATION.EXEC",
+                        1,
+                        collection! {
+                            "NR" => "65",
+                            "P1" => "Hallo",
+                            "P2" => "Welt"
+                        },
+                        None,
+                    )
                     .await
             }
             .boxed()

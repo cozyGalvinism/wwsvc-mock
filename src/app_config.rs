@@ -1,8 +1,8 @@
 use std::{collections::HashMap, fmt::Display, path::Path, str::FromStr};
 
 use figment::{
-    providers::{Env, Format, Toml},
     Figment,
+    providers::{Env, Format, Toml},
 };
 use serde::Deserialize;
 use serde_inline_default::serde_inline_default;
@@ -11,10 +11,10 @@ use crate::{DeserializedRegex, OptionalJson};
 
 fn generate_hash() -> String {
     use rand::Rng;
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     let mut hash = String::new();
     for _ in 0..32 {
-        hash.push_str(&format!("{:x}", rng.gen_range(0..16)));
+        hash.push_str(&format!("{:x}", rng.random_range(0..16)));
     }
     hash
 }
@@ -23,7 +23,8 @@ fn generate_hash() -> String {
 #[derive(Deserialize, Default, Debug, Clone)]
 pub struct AppConfig {
     /// The server configuration, see [ServerConfig] for more information.
-    pub server: Option<ServerConfig>,
+    #[serde(default = "ServerConfig::default")]
+    pub server: ServerConfig,
     /// The webware mocking configuration, see [WebwareConfig] for more information.
     #[serde(default = "WebwareConfig::default")]
     pub webware: WebwareConfig,
@@ -37,24 +38,24 @@ pub struct AppConfig {
 
 impl AppConfig {
     /// Loads the configuration from both the `config.toml` file and the environment variables.
-    /// 
-    /// The environment variables are prefixed with `APP__` and split by `__`. For example, the
-    /// `server.bind_address` field can be set by the `APP__SERVER__BIND_ADDRESS` environment.
+    ///
+    /// The environment variables are prefixed with `WWMOCK__` and split by `__`. For example, the
+    /// `server.bind_address` field can be set by the `WWMOCK__SERVER__BIND_ADDRESS` environment.
     pub fn new() -> Result<Self, figment::Error> {
         Figment::new()
             .merge(Toml::file("config.toml"))
-            .merge(Env::prefixed("APP__").split("__"))
+            .merge(Env::prefixed("WWMOCK__").split("__"))
             .extract()
     }
 
     /// Loads the configuration from the specified file and the environment variables.
     ///
-    /// The environment variables are prefixed with `APP__` and split by `__`. For example, the
-    /// `server.bind_address` field can be set by the `APP__SERVER__BIND_ADDRESS` environment.
+    /// The environment variables are prefixed with `WWMOCK__` and split by `__`. For example, the
+    /// `server.bind_address` field can be set by the `WWMOCK__SERVER__BIND_ADDRESS` environment.
     pub fn from_file(file: &Path) -> Result<Self, figment::Error> {
         Figment::new()
             .merge(Toml::file(file))
-            .merge(Env::prefixed("APP__").split("__"))
+            .merge(Env::prefixed("WWMOCK__").split("__"))
             .extract()
     }
 
@@ -72,6 +73,14 @@ pub struct ServerConfig {
     pub bind_address: String,
 }
 
+impl Default for ServerConfig {
+    fn default() -> Self {
+        ServerConfig {
+            bind_address: "0.0.0.0:3000".to_string(),
+        }
+    }
+}
+
 /// The mocking configuration for the WEBWARE, which includes the webservices and the associated credentials.
 #[derive(Deserialize, Default, Debug, Clone)]
 pub struct WebwareConfig {
@@ -87,12 +96,12 @@ pub struct WebwareConfig {
 #[derive(Deserialize, Debug, Clone)]
 pub struct CredentialsConfig {
     /// The service pass that the webservices will accept.
-    /// 
+    ///
     /// If not provided, a random 32 character hash will be generated.
     #[serde(default = "generate_hash")]
     pub service_pass: String,
     /// The application ID that the webservices will accept.
-    /// 
+    ///
     /// If not provided, a random 32 character hash will be generated.
     #[serde(default = "generate_hash")]
     pub application_id: String,
@@ -112,22 +121,22 @@ impl Default for CredentialsConfig {
 #[derive(Deserialize, Debug, Clone)]
 pub struct WebservicesConfig {
     /// The vendor hash that the webservices will accept.
-    /// 
+    ///
     /// If not provided, a random 32 character hash will be generated.
     #[serde(default = "generate_hash")]
     pub vendor_hash: String,
     /// The application hash that the webservices will accept.
-    /// 
+    ///
     /// If not provided, a random 32 character hash will be generated.
     #[serde(default = "generate_hash")]
     pub application_hash: String,
     /// The version of the webservices application that the server will accept.
-    /// 
+    ///
     /// If not provided, the version will be set to `1`.
     #[serde_inline_default(1)]
     pub version: u32,
     /// The application secret that the webservices will accept.
-    /// 
+    ///
     /// If not provided, the secret will be set to `1`.
     #[serde_inline_default("1".to_string())]
     pub application_secret: String,
@@ -151,12 +160,12 @@ pub enum FileOrString {
     /// A file path to read the data from.
     File {
         /// The path to the file.
-        file: String
+        file: String,
     },
     /// A string to use as the data.
     String {
         /// The string value.
-        value: String
+        value: String,
     },
     /// An empty data source.
     Empty,
@@ -164,7 +173,7 @@ pub enum FileOrString {
 
 impl FileOrString {
     /// Returns the data source as a string.
-    /// 
+    ///
     /// If the data source is a file, it will read the file and return the contents.
     /// If the data source is a string, it will return the string.
     /// If the data source is empty, it will return an empty string.
@@ -177,46 +186,50 @@ impl FileOrString {
     }
 
     /// Returns the data source as an [OptionalJson] value.
-    /// 
+    ///
     /// If the data source is a file, it will read the file and parse it as JSON.
     /// If the data source is a string, it will parse the string as JSON.
     /// If the data source is empty, it will return `None`.
     pub fn as_json_value(&self) -> OptionalJson {
         match self {
-            FileOrString::File { file: _ } => OptionalJson(Some(serde_json::from_str(&self.as_string()).unwrap())),
-            FileOrString::String { value: _ } => OptionalJson(Some(serde_json::from_str(&self.as_string()).unwrap())),
+            FileOrString::File { file: _ } => {
+                OptionalJson(Some(serde_json::from_str(&self.as_string()).unwrap()))
+            }
+            FileOrString::String { value: _ } => {
+                OptionalJson(Some(serde_json::from_str(&self.as_string()).unwrap()))
+            }
             FileOrString::Empty => OptionalJson(None),
         }
     }
 }
 
 /// The method of the mock resource.
-/// 
+///
 /// These are the methods that the WEBSERVICES accept for functions.
 #[derive(Deserialize, Debug, Clone, PartialEq)]
 pub enum MockResourceMethod {
     /// The GET method, used for reading data.
-    /// 
+    ///
     /// Serializes and deserializes to and from `GET`.
     #[serde(rename = "GET")]
     Get,
     /// The INSERT method, used for inserting data.
-    /// 
+    ///
     /// Serializes and deserializes to and from `INSERT`.
     #[serde(rename = "INSERT")]
     Insert,
     /// The PUT method, used for updating data.
-    /// 
+    ///
     /// Serializes and deserializes to and from `PUT`.
     #[serde(rename = "PUT")]
     Put,
     /// The DELETE method, used for deleting data.
-    /// 
+    ///
     /// Serializes and deserializes to and from `DELETE`.
     #[serde(rename = "DELETE")]
     Delete,
     /// The EXEC method, used for executing functions.
-    /// 
+    ///
     /// Serializes and deserializes to and from `EXEC`.
     #[serde(rename = "EXEC")]
     Exec,
@@ -250,7 +263,7 @@ impl Display for MockResourceMethod {
 }
 
 /// A mock resource that the server will use to mock the WEBSERVICES.
-/// 
+///
 /// The resource will only return the data from the data source if the function, method, revision and parameters match.
 /// There is currently no way to do wildcard matching.
 #[derive(Deserialize, Debug, Clone)]
@@ -258,7 +271,7 @@ pub struct MockResource {
     /// The [data source][FileOrString] for the mock resource.
     pub data_source: FileOrString,
     /// The function name for the mock resource.
-    /// 
+    ///
     /// This is the name of the function but without the method. For example, `ARTIKEL`.
     pub function: String,
     /// The method for the mock resource. See [MockResourceMethod] for more information.
@@ -275,7 +288,10 @@ impl Display for MockResource {
         write!(
             f,
             "MockResource {{ function: {}, method: {}, revision: {}, parameters: {} }}",
-            self.function, self.method, self.revision, match self.parameters {
+            self.function,
+            self.method,
+            self.revision,
+            match self.parameters {
                 Some(ref parameters) => serde_json::to_string(parameters).unwrap(),
                 None => "None".to_string(),
             }
@@ -310,59 +326,112 @@ mod tests {
         assert_eq!(config.webware.webservices.vendor_hash.len(), 32);
         assert_eq!(config.webware.webservices.application_hash.len(), 32);
         assert_eq!(config.webware.webservices.version, 1);
-        assert_eq!(config.webware.webservices.application_secret, "1".to_string());
+        assert_eq!(
+            config.webware.webservices.application_secret,
+            "1".to_string()
+        );
     }
 
     #[test]
     fn config_from_file() {
         figment::Jail::expect_with(|jail| {
-            jail.create_file("test-config.toml", r#"[server]
+            jail.create_file(
+                "test-config.toml",
+                r#"[server]
             bind_address = "0.0.0.0:3000"
-            
+
             [[mock_resources]]
             data_source.type = "Empty"
             function = "ARTIKEL"
             method = "INSERT"
             revision = 1
-            parameters.ARTNR = "MeinArtikel""#)?;
+            parameters.ARTNR = "MeinArtikel""#,
+            )?;
 
-            let config = super::AppConfig::from_file(std::path::Path::new("test-config.toml")).unwrap();
-            assert_eq!(config.server.unwrap().bind_address, "0.0.0.0:3000");
+            let config =
+                super::AppConfig::from_file(std::path::Path::new("test-config.toml")).unwrap();
+            assert_eq!(config.server.bind_address, "0.0.0.0:3000");
             assert_eq!(config.mock_resources.len(), 1);
             assert_eq!(config.mock_resources[0].function, "ARTIKEL");
-            assert_eq!(config.mock_resources[0].method, super::MockResourceMethod::Insert);
+            assert_eq!(
+                config.mock_resources[0].method,
+                super::MockResourceMethod::Insert
+            );
             assert_eq!(config.mock_resources[0].revision, 1);
-            assert_eq!(config.mock_resources[0].parameters.as_ref().unwrap().get("ARTNR").unwrap().is_match("MeinArtikel"), true);
+            assert_eq!(
+                config.mock_resources[0]
+                    .parameters
+                    .as_ref()
+                    .unwrap()
+                    .get("ARTNR")
+                    .unwrap()
+                    .is_match("MeinArtikel"),
+                true
+            );
 
             Ok(())
         });
     }
 
-    one_line_assert_eq!(method_get_to_string, super::MockResourceMethod::Get.to_string(), "GET");
-    one_line_assert_eq!(method_insert_to_string, super::MockResourceMethod::Insert.to_string(), "INSERT");
-    one_line_assert_eq!(method_put_to_string, super::MockResourceMethod::Put.to_string(), "PUT");
-    one_line_assert_eq!(method_delete_to_string, super::MockResourceMethod::Delete.to_string(), "DELETE");
-    one_line_assert_eq!(method_exec_to_string, super::MockResourceMethod::Exec.to_string(), "EXEC");
-    one_line_assert_eq!(mock_resource_without_params_to_string, super::MockResource {
-        data_source: super::FileOrString::File {
-            file: "data/artikel_clean.json".to_string(),
-        },
-        function: "ARTIKEL".to_string(),
-        method: super::MockResourceMethod::Get,
-        revision: 3,
-        parameters: None,
-    }.to_string(), "MockResource { function: ARTIKEL, method: GET, revision: 3, parameters: None }");
-    one_line_assert_eq!(mock_resource_with_params_to_string, super::MockResource {
-        data_source: super::FileOrString::File {
-            file: "data/artikel_art_nr_clean.json".to_string(),
-        },
-        function: "ARTIKEL".to_string(),
-        method: super::MockResourceMethod::Get,
-        revision: 3,
-        parameters: Some(wwsvc_rs::collection! {
-            "FELDER".to_string() => DeserializedRegex(regex::Regex::new("ART_1_25").unwrap()),
-        })
-    }.to_string(), "MockResource { function: ARTIKEL, method: GET, revision: 3, parameters: {\"FELDER\":\"ART_1_25\"} }");
-    one_line_assert_eq!(unknown_method_from_str, super::MockResourceMethod::from_str("UNKNOWN").unwrap_err(), "Unknown method: UNKNOWN");
+    one_line_assert_eq!(
+        method_get_to_string,
+        super::MockResourceMethod::Get.to_string(),
+        "GET"
+    );
+    one_line_assert_eq!(
+        method_insert_to_string,
+        super::MockResourceMethod::Insert.to_string(),
+        "INSERT"
+    );
+    one_line_assert_eq!(
+        method_put_to_string,
+        super::MockResourceMethod::Put.to_string(),
+        "PUT"
+    );
+    one_line_assert_eq!(
+        method_delete_to_string,
+        super::MockResourceMethod::Delete.to_string(),
+        "DELETE"
+    );
+    one_line_assert_eq!(
+        method_exec_to_string,
+        super::MockResourceMethod::Exec.to_string(),
+        "EXEC"
+    );
+    one_line_assert_eq!(
+        mock_resource_without_params_to_string,
+        super::MockResource {
+            data_source: super::FileOrString::File {
+                file: "data/artikel_clean.json".to_string(),
+            },
+            function: "ARTIKEL".to_string(),
+            method: super::MockResourceMethod::Get,
+            revision: 3,
+            parameters: None,
+        }
+        .to_string(),
+        "MockResource { function: ARTIKEL, method: GET, revision: 3, parameters: None }"
+    );
+    one_line_assert_eq!(
+        mock_resource_with_params_to_string,
+        super::MockResource {
+            data_source: super::FileOrString::File {
+                file: "data/artikel_art_nr_clean.json".to_string(),
+            },
+            function: "ARTIKEL".to_string(),
+            method: super::MockResourceMethod::Get,
+            revision: 3,
+            parameters: Some(wwsvc_rs::collection! {
+                "FELDER".to_string() => DeserializedRegex(regex::Regex::new("ART_1_25").unwrap()),
+            })
+        }
+        .to_string(),
+        "MockResource { function: ARTIKEL, method: GET, revision: 3, parameters: {\"FELDER\":\"ART_1_25\"} }"
+    );
+    one_line_assert_eq!(
+        unknown_method_from_str,
+        super::MockResourceMethod::from_str("UNKNOWN").unwrap_err(),
+        "Unknown method: UNKNOWN"
+    );
     one_line_assert_eq!(empty_as_str, super::FileOrString::Empty.as_string(), "");
 }

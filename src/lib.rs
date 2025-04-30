@@ -6,20 +6,23 @@
 use std::{ops::Deref, sync::Arc};
 
 use axum::{
+    Router,
     body::{Body, Bytes},
     extract::Request,
     http::StatusCode,
     middleware::Next,
     response::{IntoResponse, Response},
     routing::{get, put},
-    Router,
 };
 use http_body_util::BodyExt;
 
 mod app_config;
 mod routes;
 
-pub use app_config::{AppConfig, FileOrString, MockResource, MockResourceMethod, ServerConfig, WebwareConfig, WebservicesConfig, CredentialsConfig};
+pub use app_config::{
+    AppConfig, CredentialsConfig, FileOrString, MockResource, MockResourceMethod, ServerConfig,
+    WebservicesConfig, WebwareConfig,
+};
 use routes::{
     exec_json::exec_json,
     service_pass::{handle_deregister, handle_register},
@@ -78,20 +81,20 @@ pub struct OptionalJson(
 );
 
 /// Generates the router for the mock server using the provided configuration.
-/// 
+///
 /// It currently supports the following routes:
-/// 
+///
 /// - `PUT/POST/DELETE /WWSVC/EXECJSON/`
 /// - `PUT/POST/DELETE /WWSVC/EXECJSON`
-/// - `GET /WWSVC/WWSERVICE/REGISTER/:vendor_hash/:app_hash/:secret/:revision/`
-/// - `GET /WWSVC/WWSERVICE/DEREGISTER/:service_pass/`
+/// - `GET /WWSVC/WWSERVICE/REGISTER/{vendor_hash}/{app_hash}/{secret}/{revision}/`
+/// - `GET /WWSVC/WWSERVICE/DEREGISTER/{service_pass}/`
 pub async fn app(config: &AppConfig) -> anyhow::Result<Router> {
     let registering_routes = Router::new()
         .route(
-            "/REGISTER/:vendor_hash/:app_hash/:secret/:revision/",
+            "/REGISTER/{vendor_hash}/{app_hash}/{secret}/{revision}/",
             get(handle_register),
         )
-        .route("/DEREGISTER/:service_pass/", get(handle_deregister));
+        .route("/DEREGISTER/{service_pass}/", get(handle_deregister));
 
     let wwsvc_router = Router::new()
         .route(
@@ -143,7 +146,8 @@ impl<'de> serde::Deserialize<'de> for DeserializedRegex {
 impl serde::Serialize for DeserializedRegex {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
-        S: serde::Serializer {
+        S: serde::Serializer,
+    {
         self.0.as_str().serialize(serializer)
     }
 }
@@ -174,7 +178,8 @@ mod tests {
 
     #[test]
     fn serialize_regex() {
-        let serialized = serde_json::to_string(&super::DeserializedRegex::new("^abc$").unwrap()).unwrap();
+        let serialized =
+            serde_json::to_string(&super::DeserializedRegex::new("^abc$").unwrap()).unwrap();
         assert_eq!(serialized, r#""^abc$""#);
     }
 }

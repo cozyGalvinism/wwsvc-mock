@@ -1,6 +1,8 @@
 use axum_test::{TestServer, TestServerConfig};
-use wwsvc_mock::{app, AppConfig, DeserializedRegex, FileOrString, MockResource, MockResourceMethod};
-use wwsvc_rs::{collection, WebwareClient};
+use wwsvc_mock::{
+    AppConfig, DeserializedRegex, FileOrString, MockResource, MockResourceMethod, app,
+};
+use wwsvc_rs::{WebwareClient, collection};
 
 pub struct TestEnvironment {
     pub server: TestServer,
@@ -9,59 +11,70 @@ pub struct TestEnvironment {
 }
 
 pub async fn setup(debug: bool) -> anyhow::Result<TestEnvironment> {
-    let mut config = AppConfig::default().with_mock_resource(MockResource {
-        data_source: FileOrString::File {
-            file: "data/artikel_clean.json".to_string(),
-        },
-        function: "ARTIKEL".to_string(),
-        method: MockResourceMethod::Get,
-        revision: 3,
-        parameters: None,
-    }).with_mock_resource(MockResource {
-        data_source: FileOrString::File {
-            file: "data/artikel_art_nr_clean.json".to_string(),
-        },
-        function: "ARTIKEL".to_string(),
-        method: MockResourceMethod::Get,
-        revision: 3,
-        parameters: Some(collection! {
-            "FELDER".to_string() => DeserializedRegex::new("ART_1_25").unwrap(),
+    let mut config = AppConfig::default()
+        .with_mock_resource(MockResource {
+            data_source: FileOrString::File {
+                file: "data/artikel_clean.json".to_string(),
+            },
+            function: "ARTIKEL".to_string(),
+            method: MockResourceMethod::Get,
+            revision: 3,
+            parameters: None,
         })
-    }).with_mock_resource(MockResource {
-        data_source: FileOrString::Empty,
-        function: "ARTIKEL".to_string(),
-        method: MockResourceMethod::Put,
-        revision: 1,
-        parameters: Some(collection! {
-            "ARTNR".to_string() => DeserializedRegex::new("Artikel19Prozent").unwrap(),
-            "ART_51_60".to_string() => DeserializedRegex::new("Eine Bezeichnung").unwrap(),
+        .with_mock_resource(MockResource {
+            data_source: FileOrString::File {
+                file: "data/artikel_art_nr_clean.json".to_string(),
+            },
+            function: "ARTIKEL".to_string(),
+            method: MockResourceMethod::Get,
+            revision: 3,
+            parameters: Some(collection! {
+                "FELDER".to_string() => DeserializedRegex::new("ART_1_25").unwrap(),
+            }),
         })
-    }).with_mock_resource(MockResource {
-        data_source: FileOrString::String { value: r#"{"ARTNR": "MeinArtikel"}"#.to_string() },
-        function: "ARTIKEL".to_string(),
-        method: MockResourceMethod::Insert,
-        revision: 2,
-        parameters: Some(collection! {
-            "ARTNR".to_string() => DeserializedRegex::new("MeinArtikel").unwrap(),
+        .with_mock_resource(MockResource {
+            data_source: FileOrString::Empty,
+            function: "ARTIKEL".to_string(),
+            method: MockResourceMethod::Put,
+            revision: 1,
+            parameters: Some(collection! {
+                "ARTNR".to_string() => DeserializedRegex::new("Artikel19Prozent").unwrap(),
+                "ART_51_60".to_string() => DeserializedRegex::new("Eine Bezeichnung").unwrap(),
+            }),
         })
-    }).with_mock_resource(MockResource {
-        data_source: FileOrString::Empty,
-        function: "ARTIKEL".to_string(),
-        method: MockResourceMethod::Delete,
-        revision: 1,
-        parameters: Some(collection! {
-            "ARTNR".to_string() => DeserializedRegex::new("Artikel19Prozent").unwrap(),
+        .with_mock_resource(MockResource {
+            data_source: FileOrString::String {
+                value: r#"{"ARTNR": "MeinArtikel"}"#.to_string(),
+            },
+            function: "ARTIKEL".to_string(),
+            method: MockResourceMethod::Insert,
+            revision: 2,
+            parameters: Some(collection! {
+                "ARTNR".to_string() => DeserializedRegex::new("MeinArtikel").unwrap(),
+            }),
         })
-    }).with_mock_resource(MockResource {
-        data_source: FileOrString::String { value: r#"{"GET_RESULT": "Hallo"}"#.to_string() },
-        function: "GET_RELATION".to_string(),
-        method: MockResourceMethod::Exec,
-        revision: 1,
-        parameters: Some(collection! {
-            "NR".to_string() => DeserializedRegex::new("65").unwrap(),
-            "P1".to_string() => DeserializedRegex::new("Hallo").unwrap(),
+        .with_mock_resource(MockResource {
+            data_source: FileOrString::Empty,
+            function: "ARTIKEL".to_string(),
+            method: MockResourceMethod::Delete,
+            revision: 1,
+            parameters: Some(collection! {
+                "ARTNR".to_string() => DeserializedRegex::new("Artikel19Prozent").unwrap(),
+            }),
         })
-    });
+        .with_mock_resource(MockResource {
+            data_source: FileOrString::String {
+                value: r#"{"GET_RESULT": "HalloWelt"}"#.to_string(),
+            },
+            function: "GET_RELATION".to_string(),
+            method: MockResourceMethod::Exec,
+            revision: 1,
+            parameters: Some(collection! {
+                "NR".to_string() => DeserializedRegex::new("65").unwrap(),
+                "P1".to_string() => DeserializedRegex::new("Hallo").unwrap(),
+                "P2".to_string() => DeserializedRegex::new("Welt").unwrap(),
+            }),
+        });
 
     config.debug = debug;
 
@@ -110,5 +123,9 @@ pub async fn setup(debug: bool) -> anyhow::Result<TestEnvironment> {
         .allow_insecure(true)
         .build();
 
-    Ok(TestEnvironment { server, client, config })
+    Ok(TestEnvironment {
+        server,
+        client,
+        config,
+    })
 }

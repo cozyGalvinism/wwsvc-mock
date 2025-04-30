@@ -1,7 +1,7 @@
 [package]
 name = "wwsvc-mock"
-version = "1.0.4"
-edition = "2021"
+version = "1.0.5"
+edition = "2024"
 authors = ["cozyGalvinism <jean@der-capta.in>"]
 license = "LGPL-3.0"
 description = "A mock server for testing SoftENGINE's ERP Suite without setting up an instance!"
@@ -11,24 +11,26 @@ exclude = ["/data"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-anyhow = "1.0.80"
-axum = { version = "0.7.4", features = ["macros"] }
-figment = { version = "0.10.14", features = ["env", "toml", "test"] }
-rand = "0.8.5"
-serde = { version = "1.0.197", features = ["derive"] }
-serde-inline-default = "0.2.0"
+anyhow = "1.0"
+axum = { version = "0.8", features = ["macros"] }
+figment = { version = "0.10", features = ["env", "toml", "test"] }
+rand = "0.9"
+serde = { version = "1.0", features = ["derive"] }
+serde-inline-default = "0.2"
 tokio = { version = "1.36.0", features = ["full"] }
 md5 = "0.7.0"
 encoding_rs = "0.8.33"
-strum = { version = "0.26.2", features = ["derive"] }
+strum = { version = "0.27", features = ["derive"] }
 serde_json = "1.0.114"
 http-body-util = "0.1.1"
 tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 regex = "1.10.3"
+async-trait = "0.1.88"
+clap = { version = "4.5.37", features = ["derive"] }
 
 [dev-dependencies]
-axum-test = "14.3.1"
+axum-test = "17.3"
 pretty_assertions = "1.4.0"
 serde_json = "1.0.114"
 wwsvc-rs = { version = "3", features = ["derive", "rustls"] }
